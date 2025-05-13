@@ -16,6 +16,8 @@ services:
     environment:
       - ORACLE_PWD=${ORACLE_PASSWORD}  # Oracle Database의 SYS 및 SYSTEM 계정 관리자 비밀번호
       - ORACLE_CHARACTERSET=AL32UTF8  # 문자 집합 설정
+      - TZ=Asia/Seoul
+
     ports:
       - "1521:1521"  # Oracle DB의 기본 포트
       - "5500:5500"  # Oracle Management 서비스 포트
