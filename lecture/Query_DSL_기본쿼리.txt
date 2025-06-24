@@ -1,0 +1,25 @@
+# elasticsearch 구동중인지 확인
+GET /
+
+# 인덱스 생성
+put /users
+
+# 인덱스 생성 확인
+GET /users
+
+# 매핑 정의하기
+# put /{인덱스명}/_mappings
+put /users/_mappings
+{
+  "properties":{
+    "name":{"type":"keyword"},
+    "age":{"type":"integer"},
+    "is_active":{"type":"boolean"}
+  }
+}
+
+# 인덱스 삭제
+DELETE /users
+
+# 인덱스 삭제확인
+GET /users
