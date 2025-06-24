@@ -1,0 +1,334 @@
+# analyzer
+
+# 인덱스 생성 ( analyzer 미설정-> standard analyzer)
+PUT /products/
+{
+    "mappings" : {
+        "properties":{
+            "id": {
+                "type" : "long"
+            },
+            "description" : {
+                "type" : "text"
+            }
+        }
+    }
+}
+
+# 인덱스 생성 ( custom analyzer 설정)
+PUT /products/
+{
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "products_description_analyzer" :{
+                    "char_filter" : [],
+                    "tokenizer" : "standard",
+                    "filter" : ["lowercase"]
+                }
+            }
+        }
+    },
+
+    "mappings" : {
+        "properties":{
+            "id": {
+                "type" : "long"
+            },
+            "description" : {
+                "type" : "text",
+                "analyzer": "products_description_analyzer"
+            }
+        }
+    }
+}
+
+# 인덱스 생성 확인
+GET /products
+
+# 문서 생성
+POST  /products/_create/1
+{
+    "id": 1,
+    "description" : "무선 블루투스 이어폰 Samsung"
+}
+POST  /products/_create/2
+{
+    "id": 2,
+    "description" : "프리미엄 노이즈 캔슬링 헤드폰 i-Phone"
+}
+POST  /products/_create/3
+{
+    "id": 3,
+    "description" : "노이즈 캔슬링 기능을 탑재한 무선 이어폰"
+}
+
+# 전체조회
+GET /products/_search
+
+# 인덱스 삭제
+DELETE /products
+
+# 검색
+GET products/_search
+{
+    "query": {
+        "match": {
+            "description": "노이즈 캔슬링 이어폰"
+        }
+    }
+}
+
+GET products/_search
+{
+    "query": {
+        "match": {
+            "description": "samsung"
+        }
+    }
+}
+
+# analyzer가 문장을 어떻게 나누는지 확인하고자 할때
+GET /_analyze
+{
+    "text" : "무선 블루투스 이어폰",
+    "analyzer" : "standard"
+}
+
+# standard analyzer
+GET /_analyze
+{
+    "text" : "무선 블루투스 이어폰 Samsung",
+    "char_filter" : [],
+    "tokenizer" : "standard",  
+    "filter" : ["lowercase"]
+}
+
+
+# bbs 인덱스 삭제
+DELETE /bbs
+
+# bbs 인덱스 생성
+PUT /bbs
+{
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "bbs_title_analyzer" : {
+                    "char_filter" : [],
+                    "tokenizer" : "standard",
+                    "filter" : ["lowercase"]
+                },                
+                "bbs_content_analyzer" : {
+                    "char_filter" : ["html_strip"],
+                    "tokenizer" : "standard",
+                    "filter" : ["lowercase", "stop", "stemmer"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "title" : {
+                "type" : "text",
+                "analyzer": "bbs_title_analyzer"
+            },
+            "content" : {
+                "type" : "text",
+                "analyzer": "bbs_content_analyzer"
+            }
+        }
+    }
+}
+
+# document 삽입
+POST /bbs/_create/1
+{
+    "title" : "글제목",
+    "content" : "내용 <b>안녕</b>"
+}
+
+# document 검색
+GET /bbs/_search
+{
+    "query" : {
+        "match": {
+            "content" : "b"
+        }
+    }
+}
+
+# bbs인덱스에 정의된 analyzer사용하기
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_content_analyzer",
+    "text" : "내용 <b>안녕</b>"
+}
+
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_title_analyzer",
+    "text" : "i am a boy"
+}
+
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_content_analyzer",
+    "text" : "i am a boy"
+}
+
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_title_analyzer",
+    "text" : "running"
+}
+
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_content_analyzer",
+    "text" : "running"
+}
+
+# 동의어 기능 반영하기
+
+DELETE /products
+
+PUT /products
+{
+    "settings": {
+        "analysis": {
+            "filter": {
+                "products_synonym_filter":{
+                    "type" : "synonym",
+                    "synonyms" : [
+                        "notebook, 노트북, 랩탑, laptop, 휴대용 컴퓨터",
+                        "samsung, 삼성"
+                    ]       
+                }
+            },
+            "analyzer": {
+                "products_name_analyer":{
+                    "char_filter" : [],
+                    "tokenizer" : "standard",
+                    "filter" : ["lowercase","products_synonym_filter"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "name" : {
+                "type" : "text",
+                "analyzer": "products_name_analyer"    
+            }
+        }
+    }
+}
+
+POST  /products/_create/1
+{
+    "name" : "notebook"
+}
+POST  /products/_create/2
+{
+    "name" : "노트북"
+}
+POST  /products/_create/3
+{
+    "name" : "휴대용 컴퓨터"
+}
+POST  /products/_create/4
+{
+    "name" : "laptop"
+}
+POST  /products/_create/5
+{
+    "name" : "삼성"
+}
+
+GET /products/_search
+{
+    "query": {
+        "match": {
+          "name": "삼성"
+        }
+    }
+}
+//기존 인덱스 삭제
+DELETE /bbs
+
+//인덱스 생성, 매핑정의, custom analyzer 적용
+PUT /bbs
+{
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "bbs_content_analyzer" : {
+                    "char_filter" : [],
+                    "tokenizer" : "standard",
+                    "filter" : ["lowercase","stemmer"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "content" : {
+                "type": "text",
+                "analyzer": "bbs_content_analyzer"
+            }
+        }
+    }
+}
+# 인덱스 생성 확인
+GET /bbs
+
+# 문서 삽입
+POST /bbs/_doc
+{
+    "content" : "영화관에서 영화보다가 친구를 우연해 만나 좋았다"
+}
+POST /bbs/_doc
+{
+    "content" : "i'm running"
+}
+
+# 전체조회
+GET /bbs/_search
+
+# 문서검색
+GET /bbs/_search
+{
+    "query": {
+        "match": {
+          "content": "run"
+        }
+    }
+}
+
+# 색인과정 확인하기
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_content_analyzer",
+    "text" : "영화관에서 영화보다가 친구를 우연히 만나 좋았다"
+}
+GET /bbs/_analyze
+{
+    "analyzer" : "bbs_content_analyzer",
+    "text" : "i'm running"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
