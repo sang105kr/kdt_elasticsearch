@@ -1,0 +1,117 @@
+# elasticsearch 구동 중인지 확인
+GET /
+
+# 인덱스 생성
+put /users
+
+# 인덱스 생성 확인
+GET /users
+
+# 매핑 정의하기
+# put /{인덱스명}/_mappings
+put /users/_mappings
+{
+  "properties":{
+    "name":{"type":"keyword"},
+    "age":{"type":"integer"},
+    "is_active":{"type":"boolean"}
+  }
+}
+
+# 인덱스 삭제
+DELETE /users
+
+# 인덱스 삭제확인
+GET /users
+
+# 인덱스 생성하면서 매핑 지정하기
+put /users
+{
+  "mappings": {
+    "properties":{
+      "name":{"type":"keyword"},
+      "age":{"type":"integer"},
+      "is_active":{"type":"boolean"}
+    }
+  }
+}
+
+# document 삽입
+# POST /{인덱스명}/_doc
+post /users/_doc
+{
+  "name":"홍길동",
+  "age": 20,
+  "is_active" : true
+}
+post /users/_doc
+{
+  "name":"홍길순",
+  "age": 30,
+  "is_active" : false
+}
+
+# document 단건 조회
+# GET /{인덱스}/_doc/문서번호
+GET /users/_doc/087ImpcB6LYQrX9rklDc
+
+# document 전체 조회
+GET /users/_search
+
+# document 저장
+# 문서 id를 직접 지정해서 저장
+# post /{인덱스명}/_create/{id}
+POST /users/_create/1
+{
+  "name":"홍길북",
+  "age": 40,
+  "is_active" : true
+}
+
+# document 저장 및 덮어쓰기
+# 동일 ID문서가 있으면 덮어쓰고 없으면 삽입
+PUT /users/_doc/2
+{
+  "name":"홍길남",
+  "age": 40,
+  "is_active" : true
+}
+PUT /users/_doc/2
+{
+  "name":"홍길남_수정",
+  "age": 50,
+  "is_active" : true
+}
+
+# 저장이 잘됐는지 확인
+GET /users/_search
+
+# patch는 elasticsearch에서 지원하지 않음
+PATCH /users/_doc/2
+{
+  "age" : 60
+}
+
+# 문서내 특정 필드 수정
+POST  /users/_update/2
+{
+  "doc":{
+    "age":60
+  }
+}
+
+# 수정확인
+GET /users/_doc/2
+
+
+# bulk api : 여러문서를 한번에처리
+POST  /users/_bulk
+{ "index": {} }{ "name": "홍길서", "age": 70, "is_active": false }{ "create": { "_id": 3 } }{ "name": "홍길서2", "age": 80, "is_active": false }
+
+get /users/_search
+
+
+
+
+
+
