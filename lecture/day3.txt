@@ -1,0 +1,329 @@
+GET /
+
+//1. 인덱스 생성 및 매핑정의 : elasticsearch pdf 12페이지 타입참조
+PUT /blog_review
+{
+    "settings":{
+        "analysis":{
+            "analyzer":{
+                "kor_eng_analyzer":{
+                    "char_filter" : [],
+                    "tokenizer" : "nori_tokenizer",
+                    "filter" : ["nori_part_of_speech","nori_readingform","lowercase","stop","stemmer"]
+                     // nori_part_of_speech 의미 없는 조사(을, 의 등), 접속사 등 제거 
+                     // nori_readingform : 한자를 한글로 바꿔서 토큰으로 저장
+                     // lowercase : 영어대문자->소문자변환
+                     // stop : 불용어 제거
+                     // steemer : 어간 추출
+                }
+            }
+        }
+    },
+    "mappings":{
+        "properties":{
+            "review_id":{
+                "type":"long"   // 정수값이므로 long
+            },
+            "user_id":{
+                "type":"long"   // 정수값이므로 long
+            },
+            "user_name":{
+                "type":"text", // 이름 일부분으로 검색 가능하게 text
+                "analyzer" : "kor_eng_analyzer"
+            },
+            "category":{
+                "type":"keyword" // 정확한 값으로 검색해야하 므로 keyword
+            },
+            "rating":{
+                "type":"double"  // 실수값이므로 double
+            },
+            "is_verified_purchase":{ 
+                "type":"boolean"  // true or false
+            },
+            "review_date":{
+                "type":"date"   // 날짜 데이터
+            },
+            "review_text":{
+                "type":"text",   // 유연한 검색을 위해 text
+                "analyzer" : "kor_eng_analyzer"
+            }
+        }
+    }
+}
+// 인덱스 생성 확인
+GET /blog_review
+
+
+// 인덱스 삭제
+DELETE /blog_review
+
+//3. 문서 5개 삽입하기
+POST /blog_review/_create/748392018347
+{
+    "review_id": 748392018347,
+    "user_id": 2077,
+    "user_name": "이준호",
+    "categories": ["생활용품", "주방기기"],
+    "rating": 3.0,
+    "is_verified_purchase": false,
+    "review_date": "2024-10-05T10:15:00Z",
+    "review_text": "포장은 깔끔했지만 성능이 기대에 못 미쳤어요."
+}
+
+POST /blog_review/_create/748392018348
+{
+    "review_id": 748392018348,
+    "user_id": 3022,
+    "user_name": "박소연",
+    "categories": ["생활용품", "욕실용품"],
+    "rating": 2.0,
+    "is_verified_purchase": false,
+    "review_date": "2024-07-14T09:05:00Z",
+    "review_text": "디자인은 괜찮지만 기능이 부족해서 아쉬워요."
+}
+POST /blog_review/_create/748392018349
+{
+"review_id": 748392018349,
+"user_id": 7789,
+"user_name": "정우성",
+"categories": ["주방기기", "소형가전"],
+"rating": 5.0,
+"is_verified_purchase": true,
+"review_date": "2024-09-01T17:30:00Z",
+"review_text": "성능이 뛰어나고 예열도 빨라서 만족합니다!"
+}
+POST /blog_review/_create/748392018350
+{
+"review_id": 748392018350,
+"user_id": 5531,
+"user_name": "최유리",
+"categories": ["가전제품", "에어컨"],
+"rating": 3.5,
+"is_verified_purchase": true,
+"review_date": "2024-06-10T11:55:00Z",
+"review_text": "냉방은 잘 되는데 리모컨 반응 속도가 느려요."
+}
+POST /blog_review/_create/748392018351
+{
+"review_id": 748392018351,
+"user_id": 4190,
+"user_name": "오세훈",
+"categories": ["생활용품", "정리/수납"],
+"rating": 4.5,
+"is_verified_purchase": false,
+"review_date": "2024-08-05T08:25:00Z",
+"review_text": "작지만 공간 활용도가 높아서 여러 개 샀어요."
+}
+
+//4. 문서가 잘 생성됐는지 확인하기
+GET /blog_review/_search      // select * from blog_review
+
+
+//match_all
+GET /blog_review/_search      // select review_text,user_name from blog_review
+{
+    "query": {
+        "match_all": {}
+    },
+    "size" : 3,   // 문서 3개만 가져오기
+    "_source": ["review_text","user_name"]
+
+}
+
+//match
+GET /blog_review/_search      
+{
+    "query": {
+        "match": {
+            "review_text" : "성능"
+        }
+    }
+}
+
+
+GET /_analyze 
+{ 
+    "text": "영화관에서 영화 보다가 친구를 우연히 만나 좋았다.", 
+    "analyzer": "standard"
+}
+
+GET /_analyze 
+{ 
+    "text": "영화관에서 영화 보다가 친구를 우연히 만나 좋았다.", 
+    "analyzer": "nori"
+}
+
+GET /_analyze 
+{ 
+    "text": "영화 명대사중에 It depends on the results 라는 문장이 있다.", 
+    "analyzer": "standard"
+}
+
+GET /_analyze 
+{ 
+    "text": "영화 명대사중에 It depends on the results 라는 문장이 있다.", 
+    "analyzer": "nori"
+}
+GET /_analyze 
+{ 
+    "text": "영화 명대사중에 It depends on the results 라는 문장이 있다.", 
+    "char_filter":[],
+    "tokenizer" : "nori_tokenizer",
+    "filter" : ["nori_part_ofspeech", "nori_readingform","lowecase"]
+}
+
+
+
+// 문제 1: review_text에 "성능"이 포함된 모든 리뷰 검색
+// case1) match 쿼리 - or
+GET /blog_review/_search
+{
+  "query": {
+    "match": {
+      "review_text": "성능 부족"   // or
+    }
+  }
+}
+// case2) match 쿼리 - and
+GET /blog_review/_search
+{
+  "query": {
+    "match": {
+      "review_text": {
+        "query" : "기능 부족",
+        "operator" : "and"      // and
+      }
+    }
+  }
+}
+// case3) match 쿼리 - minimum_should_match 사용
+GET /blog_review/_search
+{
+  "query": {
+    "match": {
+      "review_text": {
+        "query" : "성능 부족 기능",
+        "operator" : "or",         // 생략하면 or
+        "minimum_should_match": 2  // 최소 2개이상의 검색어 포함    
+      }
+    }
+  }
+}
+// 문제 2: "성능이 기대"라는 정확한 구문이 포함된 리뷰 검색
+// match_phase 쿼리
+GET /blog_review/_search
+{
+  "query": {
+    "match_phrase": {
+      "review_text": "성능이 기대"
+    }
+  }
+}
+// 문제 3: categories 필드에 "주방기기"가 있는 리뷰 검색
+// term 쿼리
+GET /blog_review/_search
+{
+  "query": {
+    "term": {
+      "categories": "주방기기"
+    }
+  }
+}
+// 문제 4: categories에 "생활용품" 또는 "가전제품"이 있는 리뷰 검색
+GET /blog_review/_search
+{
+  "query": {
+    "terms": {
+      "categories": ["생활용품", "가전제품"]
+    }
+  }
+}
+// 문제 5: rating이 4.0 이상인 리뷰 검색
+GET /blog_review/_search
+{
+  "query": {
+    "range": {
+      "rating": {
+        "gte": 4.0
+      }
+    }
+  }
+}
+// 문제 6: "성능"이 언급되고 rating이 3.0 초과인 리뷰 검색
+GET /blog_review/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "review_text": "성능" } }
+      ],
+      "filter": [
+        { "range": { "rating": { "gt": 3.0 } } }
+      ]
+    }
+  }
+}
+// 문제 7: is_verified_purchase가 false인 리뷰 제외하기
+GET /blog_review/_search
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        { "term": { "is_verified_purchase": false } }
+      ]
+    }
+  }
+}
+// 문제 8: user_name 또는 review_text에 "이"가 포함된 리뷰 검색
+GET /blog_review/_search
+{
+  "query": {
+    "multi_match": {
+      "query": "이",
+      "fields": ["user_name", "review_text"]
+    }
+  }
+}
+// 문제 9: 2024년 8월 이후의 리뷰 검색
+GET /blog_review/_search
+{
+  "query": {
+    "range": {
+      "review_date": {
+        "gte": "2024-08-01"
+      }
+    }
+  }
+}
+// 문제 10: "생활용품" 카테고리, rating 3.0 이상, "공간" 또는 "깔끔" 포함 리뷰
+GET /blog_review/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "term": { "categories": "생활용품" } },
+        { "range": { "rating": { "gte": 3.0 } } },
+        {
+          "bool": {
+            "should": [
+              { "match": { "review_text": "공간" } },
+              { "match": { "review_text": "깔끔" } }
+            ],
+            "minimum_should_match": 1
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
