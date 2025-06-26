@@ -58,6 +58,14 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.license.self_generated.type=${LICENSE}
+     # --- 추가된 CORS 설정 ---
+      - http.cors.enabled=true
+      - http.cors.allow-origin=http://localhost:5501
+      # 또는 더 유연하게:
+      # - http.cors.allow-origin="/https?:\/\/localhost(:[0-9]+)?/"
+      # 개발 시 모든 오리진 허용 (운영 환경에서는 절대 금지!):
+      # - http.cors.allow-origin=*
+      # --- 추가된 CORS 설정 끝 ---
     mem_limit: ${ES_MEM_LIMIT}
     ulimits:
       memlock:
@@ -87,6 +95,14 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.license.self_generated.type=${LICENSE}
+     # --- 추가된 CORS 설정 ---
+      - http.cors.enabled=true
+      - http.cors.allow-origin=http://localhost:5501
+      # 또는 더 유연하게:
+      # - http.cors.allow-origin="/https?:\/\/localhost(:[0-9]+)?/"
+      # 개발 시 모든 오리진 허용 (운영 환경에서는 절대 금지!):
+      # - http.cors.allow-origin=*
+      # --- 추가된 CORS 설정 끝 ---
     mem_limit: ${ES_MEM_LIMIT}
     ulimits:
       memlock:
@@ -116,6 +132,14 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.license.self_generated.type=${LICENSE}
+     # --- 추가된 CORS 설정 ---
+      - http.cors.enabled=true
+      - http.cors.allow-origin=http://localhost:5501
+      # 또는 더 유연하게:
+      # - http.cors.allow-origin="/https?:\/\/localhost(:[0-9]+)?/"
+      # 개발 시 모든 오리진 허용 (운영 환경에서는 절대 금지!):
+      # - http.cors.allow-origin=*
+      # --- 추가된 CORS 설정 끝 ---
     mem_limit: ${ES_MEM_LIMIT}
     ulimits:
       memlock:
