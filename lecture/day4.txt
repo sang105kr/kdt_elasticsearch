@@ -1,0 +1,366 @@
+GET /
+
+GET /boards
+
+PUT /boards
+
+PUT /boards/_mappings
+{
+    "properties" : {
+        "title": {
+            "type" : "text"
+        }
+    }
+}
+
+# 문서 생성 POST
+# post : 문서번호 지정 없이 생성
+POST /boards/_doc
+{
+    "title" : "제목1"
+}
+# post : 문서번호 지정 후 생성
+POST /boards/_doc/1
+{
+    "title" : "[수정]제목2"
+}
+
+# put : 문서번호 지정 없이 생성
+# -> 반드시 문서번호 포함해서 요청해야함
+PUT /boards/_doc
+{
+    "title" : "put : 문서번호 지정 없이 생성"
+}
+
+# put : 문서번호 지정 생성
+# 문서번호2 번이 존재하면 덮어쓰고 존재하지 않으면 신규생성
+PUT /boards/_doc/2
+{
+    "title" : "# put : 문서번호 지정 생성"
+}
+
+# _create 리소스를 사용한 문서 생성
+# 반드시 문서번호를 지정하여 생성해야함
+# 문서 신규 생성에만 사용됨
+POST /boards/_create/3
+{
+    "title" : "_create 리소스를 사용한 문서 생성"
+}
+
+
+# boards 인덱스 문서 전체조회
+GET /boards/_search
+
+
+# analyze api 사용하기
+GET /_analyze
+{
+    "text" : "KH인재교육원",
+    "analyzer" : "standard"
+}
+GET /_analyze
+{
+    "text" : "KH인재교육원",
+    "analyzer" : "nori"
+}
+GET /_analyze
+{
+    "text" : "KH인재교육원",
+    "char_filter": [], 
+    "tokenizer": "standard", 
+    "filter": ["lowercase"] 
+}
+
+
+# 하이라이팅
+// 인덱스 이름 목록 보기
+GET _cat/indices?h=index
+
+GET /camping
+
+GET /camping/_search
+
+GET /camping/_search
+{
+    "_source": ["facltNm"],
+    "from" : 0,
+    "size": 3,
+    "query" : {
+        "wildcard" : {
+            "facltNm" : {
+                "value" : "*캠핑장*"
+            }
+        }
+    },
+    "highlight": {
+        "fields": {
+            "facltNm" : {}
+        }
+    }   
+}
+
+PUT /camping2
+{
+    "mappings": {
+        "properties": {
+            "name" : {
+                "type" : "text",
+                "char_filter": [], 
+                "tokenizer": "nori_tokenizer", 
+                "filter": ["nori_part_of_speech", "nori_readingform", "lowercase", 
+                "stop", "stemmer"]
+            }
+        }
+    }
+}
+
+
+GET /camping2/_analyze
+{
+    "field" : "name",
+    "text" : "F1 오토캠핑장"
+}
+
+POST /camping2/_create/1
+{
+    "name" : "목사골 야영장"
+}
+POST /camping2/_create/2
+{
+    "name" : "제주인포항 개별 수영장 카라반"
+}
+POST /camping2/_create/3
+{
+    "name" : "백덕산 캠핑장"
+}
+POST /camping2/_create/4
+{
+    "name" : "김천부항댐 산내들 오토캠핑장"
+}
+POST /camping2/_create/5
+{
+    "name" : "망상오토캠핑리조트 제2오토캠핑장"
+}
+POST /camping2/_create/6
+{
+    "name" : "포레스트사운드 캠핑장"
+}
+POST /camping2/_create/7
+{
+    "name" : "항도야영장"
+}
+POST /camping2/_create/8
+{
+    "name" : "캠프빌리지"
+}
+POST /camping2/_create/9
+{
+    "name" : "갈현동화마을 오토캠핑장"
+}
+POST /camping2/_create/10
+{
+    "name" : "작천정 별빛야영장"
+}
+
+// 캠핑장 이름검색어에 하이라이팅
+GET /camping2/_search
+{
+    "query": {
+        "match": {
+          "name": "오토"
+        }
+    },
+    "highlight": {
+        "pre_tags": ["<strong style='color:red'"],
+        "post_tags": ["</strong>"],
+        "fields": {
+            "name" : {}
+        }
+    }      
+}
+
+# 자동완성
+PUT /camping3
+{
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "kor_eng_analyzer" :{
+                    "char_filter": [], 
+                    "tokenizer": "nori_tokenizer", 
+                    "filter": ["nori_part_of_speech", "nori_readingform", "lowercase", 
+                    "stop", "stemmer"]
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "name" : {
+                "type" : "search_as_you_type",
+                "analyzer": "kor_eng_analyzer"
+            }
+        }
+    }
+}
+
+POST /camping3/_create/1
+{
+    "name" : "목사골 야영장"
+}
+POST /camping3/_create/2
+{
+    "name" : "제주 인포항 개별 수영장 카라반"
+}
+POST /camping3/_create/3
+{
+    "name" : "백덕산 캠핑장"
+}
+POST /camping3/_create/4
+{
+    "name" : "김천부항댐 산내들 오토캠핑장"
+}
+POST /camping3/_create/5
+{
+    "name" : "망상오토캠핑리조트 제2오토캠핑장"
+}
+POST /camping3/_create/6
+{
+    "name" : "포레스트사운드 캠핑장"
+}
+POST /camping3/_create/7
+{
+    "name" : "항도야영장"
+}
+POST /camping3/_create/8
+{
+    "name" : "캠프빌리지"
+}
+POST /camping3/_create/9
+{
+    "name" : "갈현동화마을 오토캠핑장"
+}
+POST /camping3/_create/10
+{
+    "name" : "작천정 별빛야영장"
+}
+
+GET /camping3
+
+DELETE /camping3
+
+GET /camping3/_search
+
+GET /camping3/_search
+{
+    "query": {
+        "multi_match": {
+          "query": "카라반",
+          "fuzziness": "AUTO",
+          "type" : "bool_prefix",
+          "fields": [
+            "name",
+            "name._2gram",
+            "name._3gram"
+          ]
+        }
+    },
+    
+    "highlight": {
+        "pre_tags": ["<strong style='color:red'"],
+        "post_tags": ["</strong>"],
+        "fields": {
+            "name" : {},
+            "name._2gram" : {},
+            "name._3gram" : {}           
+        }
+    }       
+}
+
+//
+GET /camping3/_analyze
+{
+    "field" : "name",
+    "text" : "제주 인포항 개별 수영장 카라반"
+}
+GET /camping3/_analyze
+{
+    "field" : "name._2gram",
+    "text" : "제주 인포항 개별 수영장 카라반"
+}
+GET /camping3/_analyze
+{
+    "field" : "name._3gram",
+    "text" : "제주 인포항 개별 수영장 카라반"
+}
+
+
+PUT /camping4
+{
+    "settings": {
+        "analysis": {
+            "analyzer": {
+                "korean_analyzer": {
+                    "tokenizer": "nori_tokenizer",
+                    "filter": ["nori_part_of_speech", "lowercase"] 
+                    // nori_readingform, stop, stemmer는 자동완성 시 불필요하거나 과도한 정규화를 유발할 수 있으므로 제거를 고려합니다.
+                    // 필요에 따라 stop (불용어), stemmer (어간 추출)를 추가할 수 있지만, 자동완성에서는 너무 많은 정보를 제거하면 제안의 다양성이 줄어들 수 있습니다.
+                    // nori_part_of_speech는 품사 필터링으로 검색 정확도를 높일 수 있습니다.
+                }
+            }
+        }
+    },
+    "mappings": {
+        "properties": {
+            "name": {
+                "type": "text",
+                "analyzer": "korean_analyzer",
+                "term_vector": "with_positions_offsets" // 하이라이팅 정확도 향상
+            },
+            "name_autocomplete": {
+                "type": "completion",
+                "analyzer": "korean_analyzer" // 자동완성을 위한 nori 기반 analyzer 사용
+            }
+        }
+    }
+}
+
+POST /camping4/_bulk
+{"index": {"_id": "1"}}{"name": "별빛 캠핑장", "name_autocomplete": "별빛 캠핑장"}{"index": {"_id": "2"}}{"name": "산들바람 글램핑", "name_autocomplete": "산들바람 글램핑"}{"index": {"_id": "3"}}{"name": "바다 전망 카라반", "name_autocomplete": "바다 전망 카라반"}{"index": {"_id": "4"}}{"name": "숲속의 작은집 캠핑", "name_autocomplete": "숲속의 작은집 캠핑"}{"index": {"_id": "5"}}{"name": "강변 오토캠핑장", "name_autocomplete": "강변 오토캠핑장"}{"index": {"_id": "6"}}{"name": "하늘공원 캠핑장", "name_autocomplete": "하늘공원 캠핑장"}{"index": {"_id": "7"}}{"name": "도심 속 캠핑 쉼터", "name_autocomplete": "도심 속 캠핑 쉼터"}{"index": {"_id": "8"}}{"name": "글램핑 빌리지", "name_autocomplete": "글램핑 빌리지"}{"index": {"_id": "9"}}{"name": "별 헤는 밤 캠핑", "name_autocomplete": "별 헤는 밤 캠핑"}{"index": {"_id": "10"}}{"name": "카라반 파크", "name_autocomplete": "카라반 파크"}
+
+GET /camping4/_search
+{
+    "query": {
+        "multi_match": {
+            "query": "캠핑장",
+            "fuzziness": "AUTO",
+            "type": "bool_prefix", 
+            "fields": [
+                "name" // name._2gram, name._3gram은 search_as_you_type에 의해 자동으로 처리되므로, 이제는 name 필드만 지정해도 충분합니다.
+            ]
+        }
+    },
+    "highlight": {
+        "pre_tags": ["<strong style='color:red'>"],
+        "post_tags": ["</strong>"],
+        "fields": {
+            "name": {
+                "number_of_fragments": 0 // 전체 필드를 하이라이트하기 위해 조각화하지 않음
+            }
+        }
+    }
+}
+
+GET /camping4/_search
+{
+    "suggest": {
+        "name_suggestions": {
+            "prefix": "캠핑", // 사용자가 입력하는 접두사 (예: "카라")
+            "completion": {
+                "field": "name_autocomplete",
+                "size": 5, // 반환할 제안 개수
+                "skip_duplicates": true // 중복된 제안 제거
+            }
+        }
+    }
+}
