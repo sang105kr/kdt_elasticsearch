@@ -1,0 +1,377 @@
+GET /
+
+// 기존 products 인덱스 삭제
+DELETE /products
+
+// products 인덱스 생성
+PUT /products
+{
+    "settings": {
+        "analysis": {
+            // 커스텀 필터
+            "filter": {
+                // 동의어 필터 정의
+                "products_pname_synonyms" :{
+                    "type" : "synonym",
+                    "synonyms" : [
+                        "samsung, 삼성",
+                        "lg, 엘지",
+                        "노트북, 컴퓨터, 랩탑, computer, laptop, notebook",
+                        "휴대폰, 스마트폰, 휴대전화, 전화기, phone, smartphone, mobile phone",
+                        "아이폰, iphone",
+                        "맥북, 맥, mac, mackbook"
+                    ]
+                }
+            },
+
+            // 커스텀 애널라이저 정의
+            "analyzer": {
+                "products_pname_analyzer" : {
+                    "char_filter": [],
+                    "tokenizer": "nori_tokenizer",
+                    "filter": ["nori_part_of_speech","nori_readingform","lowercase","products_pname_synonyms"]
+                },
+                "products_description_analyzer" : {
+                    "char_filter": ["html_strip"], // html 제거
+                    "tokenizer": "nori_tokenizer",
+                    "filter": ["nori_part_of_speech","nori_readingform","lowercase"]
+                },
+                "products_cateogry_analyzer" : {
+                    "char_filter": [], 
+                    "tokenizer": "nori_tokenizer",
+                    "filter": ["nori_part_of_speech","nori_readingform","lowercase"]
+                }
+            }
+        }
+    },
+    
+    "mappings": {
+        "properties": {
+            "product_id" : {"type":"long"},  
+            "pname" : {
+                "type":"text",
+                "analyzer": "products_pname_analyzer"
+            }, // 유연한검색(full text search)
+            "description" : {
+                "type":"text",
+                "analyzer" : "products_description_analyzer"
+            }, // 유연한검색(full text search)
+            "price" : {"type" : "integer"},  // 10 억 이하의 정수
+            "rating" : {"type" : "double"},  // 소수점 표현의 실수
+            "category" : {
+                "type" : "text",
+                "analyzer": "products_cateogry_analyzer",
+                "fields" : {                // multi_fields 정의 (text & keyword 동시정의 사용)
+                    "keyword" : {           // category의 하위 필드로 keyword 추가생성
+                        "type" : "keyword",
+                        "ignore_above" : 50
+                    }
+                }
+            } // 정확히 일치하는 검색(term query)
+        }
+    }
+}
+
+// products 인덱스 생성 확인
+GET /products
+
+// 상품 문서 생성
+POST /products/_create/1
+  {
+    "product_id": 1,
+    "pname": "삼성 냉장고",
+    "description": "<p> 삼성의 최신 기술이 적용된 SMART 냉장고 </p>",
+    "price": 2000000,
+    "rating": 4.6,
+    "category": "가전제품"
+  }
+POST /products/_create/2  
+  {
+    "product_id": 2,
+    "pname": "LG 올레드 TV",
+    "description": "<p> 생생한 화질의 LG 올레드 TV로 최고의 시청 경험을 누리세요 </p>",
+    "price": 3500000,
+    "rating": 4.8,
+    "category": "가전제품"
+  }
+POST /products/_create/3  
+  {
+    "product_id": 3,
+    "pname": "애플 아이폰 15",
+    "description": "<p> 혁신적인 기능과 디자인의 아이폰 15 </p>",
+    "price": 1500000,
+    "rating": 4.7,
+    "category": "모바일"
+  }
+POST /products/_create/4  
+  {
+    "product_id": 4,
+    "pname": "다이슨 V11 무선 청소기",
+    "description": "<p> 강력한 흡입력과 편리한 사용성의 무선 청소기 </p>",
+    "price": 900000,
+    "rating": 4.5,
+    "category": "생활가전"
+  }
+POST /products/_create/5  
+  {
+    "product_id": 5,
+    "pname": "한샘 유로 501 침대",
+    "description": "<p> 편안하고 세련된 디자인의 침대로 숙면을 취하세요 </p>",
+    "price": 1200000,
+    "rating": 4.4,
+    "category": "가구"
+}
+POST /products/_create/6
+  {
+    "product_id": 6,
+    "pname": "엘지 냉장고",
+    "description": "<p> 엘지의 최신 기술이 적용된 SMART 냉장고 </p>",
+    "price": 2000000,
+    "rating": 4.6,
+    "category": "가전제품"
+  }
+
+// 검색
+GET /products/_search
+
+GET /products/_search
+{
+    "query": {
+        "match": {
+          "pname": "삼성"
+        }
+    }
+}
+
+// 애널라이저 검증 API
+GET /products/_analyze
+{
+    "field" : "description",
+    //"analyzer" : "standard",
+    "text" : "<strong>samsung</strong> TV"
+}
+
+
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+            "query" : "samsung",
+            "fields": ["pname","description"]
+        }
+    }
+}
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+            "query" : "samsung",
+            "fields": ["pname^3","description^1"]
+        }
+    }
+}
+
+
+// products의 pname 필드의 products_pname_analyzer가 잘 동작되는지 확인
+GET /products/_analyze
+{
+    "field" : "pname",
+    "text" : "<strong>스마트</strong> samsung TV"
+}
+
+
+// products의 description 필드의 products_description_analyzer가 잘 동작되는지 확인
+GET /products/_analyze
+{
+    "field" : "description",
+    "text" : "아버지께서 백화점에서 <strong>스마트</strong> samsung TV 사오셨다"
+}
+
+// 동의어
+// products의 pname 필드의 products_pname_synonyms잘 동작되는지 확인
+GET /products/_analyze
+{
+    "field" : "pname",
+    "text" : "휴대폰"
+}
+
+
+GET /products/_search
+{
+    "query": {
+        "match": {
+          "category.keyword": "생활가전"
+        }
+    }
+}
+
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+          "query": "가전",
+          "fields": ["category^3","category.keyword^1"]
+        }
+    }
+}
+
+
+
+GET /products/_analyze
+{
+    "field" : "category",
+    "text" : "생활가전"
+}
+GET /products/_analyze
+{
+    "field" : "category.keyword",
+    "text" : "생활가전"
+}
+
+// 상품명 또는 상품설명에 "냉장고"가 포함된 문서 조회
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+          "query": "냉장고",
+          "fields": ["pname^3","description"]
+        }
+    }
+}
+// 상품명 또는 상품설명에 "냉장고"가 포함된 문서중 상품명에 "엘지"를 포함한 문서에 가중치 부여하기
+GET /products/_search
+{
+    "query": {
+        "bool" :{
+            "should" :[
+                {
+                    "multi_match": {
+                        "query": "냉장고",
+                        "fields": ["pname","description"]
+                    }
+                },
+                {
+                    "match": {
+                        "pname" : {
+                            "query": "엘지",
+                            "boost" : 5
+                        }
+                    }  
+                }
+            ]
+        }
+    }
+}
+// 상품명 또는 상품설명에 "냉장고"가 반드시 포함된 문서중 상품명에 "엘지"를 포함한 문서에 가중치 부여하기
+GET /products/_search
+{
+    "query": {
+        "bool" :{
+            "must" :[
+                {
+                    "multi_match": {
+                        "query": "냉장고",
+                        "fields": ["pname","description"]
+                    }
+                }
+            ],
+            "should" : [
+                {
+                    "match": {
+                        "pname" : {
+                            "query": "엘지",
+                            "boost" : 5  // 필드 결과의 가중치 5배
+                        }
+                    }  
+                }
+            ]
+        }
+    }
+}
+
+// 엘지 가전제품 중 평점이 4.7 이상인 상품 노출 쿼리
+GET /products/_search
+{
+    "query": {
+        "bool": {
+           "must" : [
+                {
+                    "multi_match": {
+                        "query" : "엘지",
+                        "fields": ["pname^3","description"]
+                    }
+                }
+           ],
+           "filter": [
+                {
+                    "term" : {
+                        "category.keyword" : "가전제품"
+                    }
+                },
+                {
+                    "range" :{
+                        "rating": {
+                            "gte" : 4.5
+                        }
+                    }
+                }
+           ],
+           "should": [
+             {
+                "range": {
+                  "price": {
+                    "lt": 3000000
+                  }
+                }
+             }
+           ]
+        }
+    }
+}
+
+// 한두자 오타가 존재하더라도 검색되게하기 fuzzy 쿼리
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+          "query": "냉동고",
+          "fields": [ "pname", "description"],
+          "fuzziness" : "AUTO"
+        }
+    }
+}
+
+// 검색어 하이라이팅 하기
+GET /products/_search
+{
+    "query": {
+        "multi_match": {
+          "query": "lg",
+          "fields": [ "pname", "description"],
+          "fuzziness" : "AUTO"
+        }
+    },
+    "highlight": {
+        "fields": {
+            "pname" :{
+                "pre_tags": ["<b>"],
+                "post_tags": ["</b>"]
+            },
+            "description" :{
+                "pre_tags": ["<b>"],
+                "post_tags": ["</b>"]
+            }            
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
