@@ -50,7 +50,14 @@ PUT /products
             "product_id" : {"type":"long"},  
             "pname" : {
                 "type":"text",
-                "analyzer": "products_pname_analyzer"
+                "analyzer": "products_pname_analyzer",
+                // 멀티 필드로 search_as_you_type 타입을 추가
+                "fields": {
+                    "auto_complete": {
+                        "type": "search_as_you_type",
+                        "analyzer": "nori"
+                    }
+                }
             }, // 유연한검색(full text search)
             "description" : {
                 "type":"text",
@@ -356,22 +363,41 @@ GET /products/_search
             "pname" :{
                 "pre_tags": ["<b>"],
                 "post_tags": ["</b>"]
-            },
-            "description" :{
-                "pre_tags": ["<b>"],
-                "post_tags": ["</b>"]
-            }            
+            }        
         }
     }
 }
 
-
-
-
-
-
-
-
-
+// 자동완성
+POST /products/_search
+{
+    "query": {
+        "multi_match": {
+            "query": "lg",
+            "type": "bool_prefix", 
+            "fields": [
+                "pname.auto_complete"
+                //"pname.auto_complete._2gram",
+                //"pname.auto_complete._3gram"
+            ]
+        }
+    },
+    "highlight": {
+        "pre_tags": ["<strong style='color:red'>"],
+        "post_tags": ["</strong>"],
+        "fields": {
+            "pname.auto_complete": {
+                "number_of_fragments": 0,
+                "type": "unified",
+                "highlight_query": {  // 명시적 하이라이팅 쿼리
+                    "match": {
+                        "pname.auto_complete": "엘지"
+                    }
+                }
+            }
+        }
+    },
+  "size" : 5
+ }
 
 
